@@ -1,6 +1,6 @@
 import { User, InsertUser, ContentLink, Comment, WatchStatus } from "@shared/schema";
 import { users, contentLinks, comments, watchStatus } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -89,9 +89,18 @@ export class DatabaseStorage implements IStorage {
 
   async getCommentsByContent(contentId: number): Promise<Comment[]> {
     return await db
-      .select()
+      .select({
+        id: comments.id,
+        content: comments.content,
+        userId: comments.userId,
+        contentId: comments.contentId,
+        createdAt: comments.createdAt,
+        username: users.username
+      })
       .from(comments)
-      .where(eq(comments.contentId, contentId));
+      .where(eq(comments.contentId, contentId))
+      .innerJoin(users, eq(comments.userId, users.id))
+      .orderBy(desc(comments.createdAt));
   }
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {

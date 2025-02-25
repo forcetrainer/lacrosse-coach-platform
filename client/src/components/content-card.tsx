@@ -4,9 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ContentLink, Comment, extractVideoInfo } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, MessageSquare, Eye, PlayCircle, Trash2 } from "lucide-react";
+import { Check, MessageSquare, Eye, PlayCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import {
   AlertDialog,
@@ -45,17 +46,14 @@ function PlatformIcon({ url }: { url: string }) {
 
 export default function ContentCard({ content }: ContentCardProps) {
   const [comment, setComment] = useState("");
+  const [showAllComments, setShowAllComments] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { platform } = extractVideoInfo(content.url);
   const { user } = useAuth();
 
-  const { data: comments } = useQuery<Comment[]>({
+  const { data: comments = [] } = useQuery<(Comment & { username: string })[]>({
     queryKey: [`/api/content/${content.id}/comments`],
-  });
-
-  const { data: watchStatus } = useQuery({
-    queryKey: [`/api/content/${content.id}/watch`],
   });
 
   const toggleWatchMutation = useMutation({
@@ -117,7 +115,6 @@ export default function ContentCard({ content }: ContentCardProps) {
       await apiRequest("POST", `/api/content/${content.id}/view`);
     },
     onSuccess: () => {
-      // Invalidate the content query to refresh the view count
       queryClient.invalidateQueries({ queryKey: ["/api/content"] });
     },
     onError: (error: Error) => {
@@ -129,10 +126,21 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
   });
 
+  const { data: watchStatus } = useQuery({
+    queryKey: [`/api/content/${content.id}/watch`],
+  });
+
   const handleContentClick = () => {
     viewMutation.mutate();
     window.open(content.url, '_blank');
   };
+
+  const formatCommentDate = (date: string) => {
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
+  };
+
+  const visibleComments = showAllComments ? comments : comments.slice(0, 1);
+  const hasMoreComments = comments.length > 1;
 
   return (
     <Card>
@@ -207,14 +215,41 @@ export default function ContentCard({ content }: ContentCardProps) {
         )}
 
         <div className="mt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-4 w-4" />
-            <span className="font-medium">Comments ({comments?.length || 0})</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="font-medium">Comments ({comments.length})</span>
+            </div>
+            {hasMoreComments && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllComments(!showAllComments)}
+              >
+                {showAllComments ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    Show All ({comments.length})
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           <div className="space-y-2">
-            {comments?.map((comment) => (
-              <div key={comment.id} className="bg-muted p-2 rounded-md text-sm">
-                {comment.content}
+            {visibleComments.map((comment) => (
+              <div key={comment.id} className="bg-muted p-3 rounded-md">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm">{comment.username}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCommentDate(comment.createdAt)}
+                  </span>
+                </div>
+                <p className="text-sm">{comment.content}</p>
               </div>
             ))}
           </div>
