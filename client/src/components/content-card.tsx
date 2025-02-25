@@ -116,6 +116,10 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+      // Also update watch status when viewing content
+      if (!user?.isCoach && !watchStatus?.watched) {
+        toggleWatchMutation.mutate();
+      }
     },
     onError: (error: Error) => {
       toast({
