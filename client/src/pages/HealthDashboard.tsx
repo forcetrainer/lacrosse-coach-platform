@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
   CardContent,
@@ -52,15 +53,34 @@ const formatUptime = (seconds: number): string => {
 };
 
 export const HealthDashboard: FC = () => {
-  const { data: metrics, error, isLoading } = useQuery<SystemMetrics>({
+  const { user, isLoading: isAuthLoading } = useAuth();
+
+  // Wait for auth to be confirmed before making the request
+  const { data: metrics, error, isLoading: isMetricsLoading } = useQuery<SystemMetrics>({
     queryKey: ['/api/health'],
     refetchInterval: 5000, // Refresh every 5 seconds
+    enabled: !!user?.isCoach // Only fetch if user is a coach
   });
+
+  const isLoading = isAuthLoading || isMetricsLoading;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user?.isCoach) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            Only coaches can access the health dashboard.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
