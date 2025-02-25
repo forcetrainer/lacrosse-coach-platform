@@ -107,7 +107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       parseInt(req.params.contentId)
     );
 
-    // Always return a definitive watch status
     // If no record exists, it means the video is unwatched
     res.json({
       watched: Boolean(status?.watched)
