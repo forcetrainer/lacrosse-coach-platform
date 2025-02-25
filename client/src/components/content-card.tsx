@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ContentLink, Comment, detectPlatform } from "@shared/schema";
+import { ContentLink, Comment, extractVideoInfo } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, MessageSquare, Eye } from "lucide-react";
+import { Check, MessageSquare, Eye, PlayCircle } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -14,7 +14,7 @@ interface ContentCardProps {
 }
 
 function PlatformIcon({ url }: { url: string }) {
-  const platform = detectPlatform(url);
+  const { platform } = extractVideoInfo(url);
   const iconClass = "h-5 w-5";
 
   switch (platform) {
@@ -35,7 +35,7 @@ export default function ContentCard({ content }: ContentCardProps) {
   const [comment, setComment] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const platform = detectPlatform(content.url);
+  const { platform } = extractVideoInfo(content.url);
 
   const { data: comments } = useQuery<Comment[]>({
     queryKey: [`/api/content/${content.id}/comments`],
@@ -99,14 +99,32 @@ export default function ContentCard({ content }: ContentCardProps) {
         <div className="text-sm text-muted-foreground">Category: {content.category}</div>
       </CardHeader>
       <CardContent>
-        <a
-          href={content.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-blue-600 hover:underline break-all"
-        >
-          View on {platform}
-        </a>
+        {content.thumbnailUrl ? (
+          <a
+            href={content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
+          >
+            <img
+              src={content.thumbnailUrl}
+              alt={content.title}
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <PlayCircle className="w-12 h-12 text-white" />
+            </div>
+          </a>
+        ) : (
+          <a
+            href={content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-blue-600 hover:underline break-all mb-4"
+          >
+            View on {platform}
+          </a>
+        )}
 
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">

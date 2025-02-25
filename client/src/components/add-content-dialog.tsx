@@ -25,12 +25,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Share2 } from "lucide-react";
+import { Loader2, Share2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import { insertContentSchema, detectPlatform } from "@shared/schema";
+import { insertContentSchema, extractVideoInfo } from "@shared/schema";
 
 const categories = [
   "Dodging",
@@ -75,7 +75,7 @@ export default function AddContentDialog() {
   const url = form.watch("url");
   useEffect(() => {
     if (url) {
-      const platform = detectPlatform(url);
+      const { platform } = extractVideoInfo(url);
       if (platform !== 'Invalid URL') {
         toast({
           title: `${platform} link detected`,

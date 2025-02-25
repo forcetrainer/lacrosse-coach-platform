@@ -34,6 +34,7 @@ export const contentLinks = pgTable("content_links", {
   category: text("category").notNull(),
   coachId: integer("coach_id").notNull(),
   platform: text("platform").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
 });
 
 export const comments = pgTable("comments", {
@@ -67,10 +68,14 @@ export const insertContentSchema = createInsertSchema(contentLinks)
   .extend({
     url: socialMediaUrlSchema,
   })
-  .transform((data) => ({
-    ...data,
-    platform: detectPlatform(data.url),
-  }));
+  .transform((data) => {
+    const { platform, thumbnailUrl } = extractVideoInfo(data.url);
+    return {
+      ...data,
+      platform,
+      thumbnailUrl,
+    };
+  });
 
 export const insertCommentSchema = createInsertSchema(comments).pick({
   content: true,
@@ -85,23 +90,38 @@ export type Comment = typeof comments.$inferSelect;
 export type WatchStatus = typeof watchStatus.$inferSelect;
 
 // Platform detection helper
-export function detectPlatform(url: string): string {
+export function extractVideoInfo(url: string): { platform: string; thumbnailUrl: string | null } {
   try {
     const urlObj = new URL(url);
+
+    // YouTube
     if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-      return 'YouTube';
+      let videoId;
+      if (urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.pathname.slice(1);
+      } else {
+        videoId = urlObj.searchParams.get('v');
+      }
+      return {
+        platform: 'YouTube',
+        thumbnailUrl: videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null
+      };
     }
+
+    // For other platforms, we'll return null for now
+    // Instagram, TikTok, and Facebook require API access for thumbnails
     if (urlObj.hostname.includes('instagram.com')) {
-      return 'Instagram';
+      return { platform: 'Instagram', thumbnailUrl: null };
     }
     if (urlObj.hostname.includes('tiktok.com')) {
-      return 'TikTok';
+      return { platform: 'TikTok', thumbnailUrl: null };
     }
     if (urlObj.hostname.includes('facebook.com') || urlObj.hostname.includes('fb.watch')) {
-      return 'Facebook';
+      return { platform: 'Facebook', thumbnailUrl: null };
     }
-    return 'Other';
+
+    return { platform: 'Other', thumbnailUrl: null };
   } catch {
-    return 'Invalid URL';
+    return { platform: 'Invalid URL', thumbnailUrl: null };
   }
 }
