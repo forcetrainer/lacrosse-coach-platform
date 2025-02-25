@@ -1,114 +1,111 @@
 import { User, InsertUser, ContentLink, Comment, WatchStatus } from "@shared/schema";
+import { users, contentLinks, comments, watchStatus } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresStore = connectPgSimple(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Content management
   createContent(content: Omit<ContentLink, "id">, coachId: number): Promise<ContentLink>;
   getContent(id: number): Promise<ContentLink | undefined>;
   getAllContent(): Promise<ContentLink[]>;
-  
+
   // Comments
   createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment>;
   getCommentsByContent(contentId: number): Promise<Comment[]>;
-  
+
   // Watch status
   updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus>;
   getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined>;
-  
+
   sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private content: Map<number, ContentLink>;
-  private comments: Map<number, Comment>;
-  private watchStatuses: Map<string, WatchStatus>;
-  private currentId: number;
+export class DatabaseStorage implements IStorage {
   readonly sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.content = new Map();
-    this.comments = new Map();
-    this.watchStatuses = new Map();
-    this.currentId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async createContent(content: Omit<ContentLink, "id">, coachId: number): Promise<ContentLink> {
-    const id = this.currentId++;
-    const newContent = { ...content, id, coachId };
-    this.content.set(id, newContent);
+    const [newContent] = await db
+      .insert(contentLinks)
+      .values({ ...content, coachId })
+      .returning();
     return newContent;
   }
 
   async getContent(id: number): Promise<ContentLink | undefined> {
-    return this.content.get(id);
+    const [content] = await db.select().from(contentLinks).where(eq(contentLinks.id, id));
+    return content;
   }
 
   async getAllContent(): Promise<ContentLink[]> {
-    return Array.from(this.content.values());
+    return await db.select().from(contentLinks);
   }
 
   async createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment> {
-    const id = this.currentId++;
-    const newComment = {
-      ...comment,
-      id,
-      userId,
-      createdAt: new Date(),
-    };
-    this.comments.set(id, newComment);
+    const [newComment] = await db
+      .insert(comments)
+      .values({ ...comment, userId })
+      .returning();
     return newComment;
   }
 
   async getCommentsByContent(contentId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values()).filter(
-      (comment) => comment.contentId === contentId,
-    );
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.contentId, contentId));
   }
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
-    const key = `${userId}-${contentId}`;
-    const status = {
-      id: this.currentId++,
-      userId,
-      contentId,
-      watched,
-    };
-    this.watchStatuses.set(key, status);
+    const [status] = await db
+      .insert(watchStatus)
+      .values({ userId, contentId, watched })
+      .onConflictDoUpdate({
+        target: [watchStatus.userId, watchStatus.contentId],
+        set: { watched },
+      })
+      .returning();
     return status;
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
-    return this.watchStatuses.get(`${userId}-${contentId}`);
+    const [status] = await db
+      .select()
+      .from(watchStatus)
+      .where(eq(watchStatus.userId, userId))
+      .where(eq(watchStatus.contentId, contentId));
+    return status;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
