@@ -141,7 +141,15 @@ export default function ContentCard({ content }: ContentCardProps) {
   const isWatched = watchStatus?.watched ?? false;
 
   const handleContentClick = () => {
+    // First mark the video as viewed
     viewMutation.mutate();
+
+    // Then update watch status to watched
+    if (!user?.isCoach) {
+      toggleWatchMutation.mutate();
+    }
+
+    // Open the video in a new tab
     window.open(content.url, '_blank');
   };
 

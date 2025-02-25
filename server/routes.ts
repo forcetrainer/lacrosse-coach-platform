@@ -62,19 +62,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/content/:id/view", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
-    // Only increment views for non-coach users
-    if (!req.user.isCoach) {
-      await storage.incrementViews(parseInt(req.params.id));
+    const contentId = parseInt(req.params.id);
 
-      // Also update watch status when viewing
-      await storage.updateWatchStatus(
-        req.user.id,
-        parseInt(req.params.id),
-        true
-      );
+    try {
+      // Only increment views and update watch status for non-coach users
+      if (!req.user.isCoach) {
+        // Increment the view count
+        await storage.incrementViews(contentId);
+
+        // Update watch status to watched
+        await storage.updateWatchStatus(
+          req.user.id,
+          contentId,
+          true // Mark as watched when viewing
+        );
+      }
+
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error updating view status:', error);
+      res.status(500).json({ error: 'Failed to update view status' });
     }
-
-    res.sendStatus(200);
   });
 
   // Comments
