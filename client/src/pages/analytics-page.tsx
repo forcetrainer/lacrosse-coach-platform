@@ -2,8 +2,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Loader2 } from "lucide-react";
-import { Redirect } from "wouter";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { Redirect, Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 type AnalyticsData = {
   contentViews: {
@@ -27,7 +28,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
-  
+
   const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/analytics"],
   });
@@ -45,10 +46,26 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Analytics Dashboard</h1>
-        
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-primary">SkillReel</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Content
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <h2 className="text-3xl font-bold mb-8">Team Analytics</h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Content Views Chart */}
           <Card>
@@ -119,7 +136,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
