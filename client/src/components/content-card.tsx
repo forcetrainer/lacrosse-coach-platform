@@ -8,6 +8,7 @@ import { Check, MessageSquare, Eye, PlayCircle, Trash2 } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import InstagramEmbed from "./instagram-embed";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,7 @@ export default function ContentCard({ content }: ContentCardProps) {
   const { platform } = extractVideoInfo(content.url);
   const { user } = useAuth();
   const isYouTube = platform === 'YouTube';
+  const isInstagram = platform === 'Instagram';
 
   const { data: comments } = useQuery<Comment[]>({
     queryKey: [`/api/content/${content.id}/comments`],
@@ -158,31 +160,37 @@ export default function ContentCard({ content }: ContentCardProps) {
         <div className="text-sm text-muted-foreground">Category: {content.category}</div>
       </CardHeader>
       <CardContent>
-        <a
-          href={content.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
-        >
-          {isYouTube ? (
-            <img
-              src={content.thumbnailUrl}
-              alt={content.title}
-              className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">
+        {isInstagram ? (
+          <div className="flex justify-center mb-4">
+            <InstagramEmbed url={content.url} />
+          </div>
+        ) : (
+          <a
+            href={content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
+          >
+            {isYouTube ? (
               <img
                 src={content.thumbnailUrl}
-                alt={`${platform} content`}
-                className="h-16 w-16 object-contain"
+                alt={content.title}
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                <img
+                  src={content.thumbnailUrl}
+                  alt={`${platform} content`}
+                  className="h-16 w-16 object-contain"
+                />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <PlayCircle className="w-12 h-12 text-white" />
             </div>
-          )}
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <PlayCircle className="w-12 h-12 text-white" />
-          </div>
-        </a>
+          </a>
+        )}
 
         {content.description && (
           <div className="mb-4 p-4 bg-muted rounded-lg">
