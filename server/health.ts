@@ -55,18 +55,18 @@ export function setupHealthMonitoring(app: Express) {
     next();
   });
 
-  app.get("/api/health", async (req, res) => {
-    // First check if user is authenticated
-    if (!req.user) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-
-    // Then check if user is a coach
-    if (!req.user.isCoach) {
-      return res.status(403).json({ error: "Only coaches can access health metrics" });
-    }
-
+  app.get("/api/health", async (req: any, res) => {
     try {
+      // First check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Then check if user is a coach
+      if (!req.user.isCoach) {
+        return res.status(403).json({ error: "Only coaches can access health metrics" });
+      }
+
       // Get database connection status
       const dbStatus = {
         isConnected: pool.totalCount > 0,

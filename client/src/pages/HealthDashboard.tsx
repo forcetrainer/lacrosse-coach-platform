@@ -15,7 +15,8 @@ import {
   Users, 
   Clock, 
   AlertTriangle,
-  CheckCircle 
+  CheckCircle,
+  Loader2 
 } from "lucide-react";
 
 interface SystemMetrics {
@@ -56,8 +57,27 @@ export const HealthDashboard: FC = () => {
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
-  if (isLoading) return <div>Loading health metrics...</div>;
-  if (error) return <div>Error loading health metrics</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Error loading health metrics</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : "Failed to load health metrics"}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   if (!metrics) return null;
 
   return (
