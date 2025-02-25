@@ -31,6 +31,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { insertContentSchema, extractVideoInfo } from "@shared/schema";
+import { Textarea } from "@/components/ui/textarea";
 
 const categories = [
   "Dodging",
@@ -68,6 +69,7 @@ export default function AddContentDialog() {
       title: "",
       url: sharedUrl || "",
       category: "",
+      description: "" // Added default value for description
     },
   });
 
@@ -123,7 +125,7 @@ export default function AddContentDialog() {
           Share Content
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Share Training Content</DialogTitle>
         </DialogHeader>
@@ -153,6 +155,23 @@ export default function AddContentDialog() {
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Give this content a descriptive title" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Coach's Notes</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      placeholder="Provide additional details or instructions for your players"
+                      className="min-h-[100px]"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

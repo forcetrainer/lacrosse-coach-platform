@@ -184,6 +184,13 @@ export default function ContentCard({ content }: ContentCardProps) {
           </div>
         </a>
 
+        {content.description && (
+          <div className="mb-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">Coach's Notes:</h4>
+            <p className="text-sm whitespace-pre-wrap">{content.description}</p>
+          </div>
+        )}
+
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="h-4 w-4" />

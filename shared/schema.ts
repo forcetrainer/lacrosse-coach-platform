@@ -35,6 +35,7 @@ export const contentLinks = pgTable("content_links", {
   coachId: integer("coach_id").notNull(),
   platform: text("platform").notNull(),
   thumbnailUrl: text("thumbnail_url"),
+  description: text("description").notNull(),
 });
 
 export const comments = pgTable("comments", {
@@ -64,6 +65,7 @@ export const insertContentSchema = createInsertSchema(contentLinks)
     url: true,
     title: true,
     category: true,
+    description: true,
   })
   .extend({
     url: socialMediaUrlSchema,
