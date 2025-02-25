@@ -118,7 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.user.id,
       parseInt(req.params.contentId)
     );
-    res.json(status || { watched: false });
+    // Explicitly return unwatched status if no record exists
+    res.json({ watched: status?.watched || false });
   });
 
   // Analytics

@@ -132,7 +132,12 @@ export default function ContentCard({ content }: ContentCardProps) {
   const { data: watchStatus = { watched: false } } = useQuery({
     queryKey: [`/api/content/${content.id}/watch`],
     enabled: !user?.isCoach, // Only fetch watch status for non-coach users
+    // Force default value to be unwatched
+    placeholderData: { watched: false }
   });
+
+  // Explicit check for watched status
+  const isWatched = watchStatus?.watched === true;
 
   const handleContentClick = () => {
     viewMutation.mutate();
@@ -146,8 +151,6 @@ export default function ContentCard({ content }: ContentCardProps) {
   const visibleComments = showAllComments ? comments : comments.slice(0, 1);
   const hasMoreComments = comments.length > 1;
 
-  // Only show watch status if we have explicit data
-  const isWatched = watchStatus?.watched ?? false;
 
   return (
     <Card>
