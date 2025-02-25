@@ -108,8 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     );
 
     // Always return a definitive watch status
+    // If no record exists, it means the video is unwatched
     res.json({
-      watched: status ? status.watched : false
+      watched: Boolean(status?.watched)
     });
   });
 
@@ -122,7 +123,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.body.watched
     );
 
-    res.json(status);
+    res.json({
+      watched: Boolean(status.watched)
+    });
   });
 
   // Analytics

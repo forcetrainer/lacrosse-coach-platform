@@ -134,8 +134,8 @@ export default function ContentCard({ content }: ContentCardProps) {
     enabled: !user?.isCoach, // Only fetch watch status for non-coach users
   });
 
-  // Explicitly check watched status - if no data exists, it's unwatched
-  const isWatched = watchStatus?.watched ?? false;
+  // By default, content is unwatched unless explicitly marked as watched
+  const isWatched = Boolean(watchStatus?.watched);
 
   const handleContentClick = () => {
     viewMutation.mutate();
