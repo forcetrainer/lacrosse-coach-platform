@@ -58,23 +58,23 @@ app.use((req, res, next) => {
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  }).on('error', (e: any) => {
-    if (e.code === 'EADDRINUSE') {
-      log(`Port ${port} is busy, trying ${port + 1}`);
-      server.listen({
-        port: port + 1,
-        host: "0.0.0.0",
-        reusePort: true,
-      }, () => {
-        log(`serving on port ${port + 1}`);
-      });
-    }
-  });
+  let port = 5000;
+  const startServer = () => {
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+    }).on('error', (e: any) => {
+      if (e.code === 'EADDRINUSE') {
+        port++;
+        log(`Port ${port-1} is busy, trying ${port}`);
+        startServer();
+      } else {
+        throw e;
+      }
+    });
+  };
+  startServer();
 })();
