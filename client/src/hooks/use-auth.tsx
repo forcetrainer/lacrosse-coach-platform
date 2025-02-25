@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      // Invalidate content query to ensure fresh data after login
+      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
     },
     onError: (error: Error) => {
       toast({
@@ -55,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      // Invalidate content query to ensure fresh data after registration
+      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
     },
     onError: (error: Error) => {
       toast({
@@ -71,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      // Clear all queries from cache on logout
+      queryClient.clear();
     },
     onError: (error: Error) => {
       toast({

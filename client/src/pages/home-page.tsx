@@ -8,11 +8,15 @@ import { LogOut } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
+type ContentWithWatchers = ContentLink & {
+  watchers?: { username: string; watched: boolean }[];
+};
+
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
 
-  const { data: content, isLoading } = useQuery<ContentLink[]>({
-    queryKey: ["/api/content"],
+  const { data: content, isLoading } = useQuery<ContentWithWatchers[]>({
+    queryKey: ["/api/content", user?.isCoach],
   });
 
   return (
