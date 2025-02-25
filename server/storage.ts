@@ -106,33 +106,21 @@ export class DatabaseStorage implements IStorage {
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
     try {
-      // First try to find existing watch status
-      const [existingStatus] = await db
-        .select()
-        .from(watchStatus)
-        .where(eq(watchStatus.userId, userId))
-        .where(eq(watchStatus.contentId, contentId));
+      // Use an upsert operation to either update existing or create new record
+      const [status] = await db
+        .insert(watchStatus)
+        .values({
+          userId,
+          contentId,
+          watched
+        })
+        .onConflictDoUpdate({
+          target: [watchStatus.userId, watchStatus.contentId],
+          set: { watched }
+        })
+        .returning();
 
-      if (existingStatus) {
-        // Update existing status
-        const [updated] = await db
-          .update(watchStatus)
-          .set({ watched })
-          .where(eq(watchStatus.id, existingStatus.id))
-          .returning();
-        return updated;
-      } else {
-        // Create new status entry
-        const [newStatus] = await db
-          .insert(watchStatus)
-          .values({
-            userId,
-            contentId,
-            watched
-          })
-          .returning();
-        return newStatus;
-      }
+      return status;
     } catch (error) {
       console.error('Error updating watch status:', error);
       throw error;
@@ -147,7 +135,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(watchStatus.userId, userId))
       .where(eq(watchStatus.contentId, contentId));
 
-    // If no status exists for this user+content combination, return undefined
     return status;
   }
 
