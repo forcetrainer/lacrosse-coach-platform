@@ -108,16 +108,33 @@ export function extractVideoInfo(url: string): { platform: string; thumbnailUrl:
       };
     }
 
-    // For other platforms, we'll return null for now
-    // Instagram, TikTok, and Facebook require API access for thumbnails
+    // Instagram
     if (urlObj.hostname.includes('instagram.com')) {
-      return { platform: 'Instagram', thumbnailUrl: null };
+      const match = urlObj.pathname.match(/\/(p|reel|tv)\/([^\/]+)/);
+      const mediaId = match?.[2];
+      return {
+        platform: 'Instagram',
+        thumbnailUrl: mediaId ? `https://www.instagram.com/p/${mediaId}/media/?size=l` : null
+      };
     }
+
+    // TikTok
     if (urlObj.hostname.includes('tiktok.com')) {
-      return { platform: 'TikTok', thumbnailUrl: null };
+      const match = urlObj.pathname.match(/\/video\/(\d+)/);
+      const videoId = match?.[1];
+      return {
+        platform: 'TikTok',
+        thumbnailUrl: videoId ? `https://www.tiktok.com/api/img/?itemId=${videoId}` : null
+      };
     }
+
+    // Facebook
     if (urlObj.hostname.includes('facebook.com') || urlObj.hostname.includes('fb.watch')) {
-      return { platform: 'Facebook', thumbnailUrl: null };
+      const videoId = urlObj.searchParams.get('v');
+      return {
+        platform: 'Facebook',
+        thumbnailUrl: videoId ? `https://graph.facebook.com/${videoId}/picture` : null
+      };
     }
 
     return { platform: 'Other', thumbnailUrl: null };
