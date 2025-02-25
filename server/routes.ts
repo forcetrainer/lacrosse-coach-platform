@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(req.params.contentId)
       );
 
-      // If no status exists for this user and content, it's unwatched
+      // Always return a definitive watch status - if no record exists, it's unwatched
       res.json({
         watched: status ? status.watched : false
       });
