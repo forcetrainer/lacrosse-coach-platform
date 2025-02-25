@@ -128,12 +128,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
-    // Get watch status for this specific user and content combination
+    // Get watch status for this specific user and content combination using AND condition
     const [status] = await db
       .select()
       .from(watchStatus)
-      .where(eq(watchStatus.userId, userId))
-      .where(eq(watchStatus.contentId, contentId));
+      .where(sql`${watchStatus.userId} = ${userId} AND ${watchStatus.contentId} = ${contentId}`);
 
     return status;
   }
