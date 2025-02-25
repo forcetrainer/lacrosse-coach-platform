@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface InstagramEmbedProps {
   url: string;
@@ -16,16 +16,38 @@ declare global {
 
 export default function InstagramEmbed({ url }: InstagramEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Process embeds when the component mounts or URL changes
-    if (window.instgrm) {
-      window.instgrm.Embeds.process();
+    let attempts = 0;
+    const maxAttempts = 10;
+    const interval = 1000; // 1 second
+
+    const processEmbed = () => {
+      if (window.instgrm) {
+        window.instgrm.Embeds.process();
+        setIsLoading(false);
+        return true;
+      }
+      return false;
+    };
+
+    // Try to process immediately if script is already loaded
+    if (!processEmbed() && attempts < maxAttempts) {
+      // If not loaded, try again periodically
+      const timer = setInterval(() => {
+        attempts++;
+        if (processEmbed() || attempts >= maxAttempts) {
+          clearInterval(timer);
+        }
+      }, interval);
+
+      return () => clearInterval(timer);
     }
   }, [url]);
 
   return (
-    <div ref={containerRef} className="instagram-embed-container">
+    <div ref={containerRef} className="instagram-embed-container w-full max-w-[550px] mx-auto">
       <blockquote
         className="instagram-media"
         data-instgrm-permalink={url}
@@ -43,21 +65,11 @@ export default function InstagramEmbed({ url }: InstagramEmbedProps) {
         }}
       >
         <div style={{ padding: "16px" }}>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: "#FFFFFF",
-              lineHeight: 0,
-              padding: "0 0",
-              textAlign: "center",
-              textDecoration: "none",
-              width: "100%",
-            }}
-          >
-            Loading Instagram content...
-          </a>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              Loading Instagram content...
+            </div>
+          ) : null}
         </div>
       </blockquote>
     </div>
