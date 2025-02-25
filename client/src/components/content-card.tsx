@@ -146,6 +146,9 @@ export default function ContentCard({ content }: ContentCardProps) {
   const visibleComments = showAllComments ? comments : comments.slice(0, 1);
   const hasMoreComments = comments.length > 1;
 
+  // Only show watch status if we have explicit data
+  const isWatched = watchStatus?.watched ?? false;
+
   return (
     <Card>
       <CardHeader>
@@ -182,9 +185,9 @@ export default function ContentCard({ content }: ContentCardProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => toggleWatchMutation.mutate()}
-                className={watchStatus?.watched ? "text-green-600" : ""}
+                className={isWatched ? "text-green-600" : ""}
               >
-                {watchStatus?.watched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {isWatched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             )}
           </div>
@@ -193,7 +196,7 @@ export default function ContentCard({ content }: ContentCardProps) {
           <span>Category: {content.category}</span>
           <div className="flex items-center gap-4">
             {!user?.isCoach && (
-              <span>{watchStatus?.watched ? "Watched" : "Not watched"}</span>
+              <span>{isWatched ? "Watched" : "Not watched"}</span>
             )}
             <span>{content.views} views</span>
           </div>
