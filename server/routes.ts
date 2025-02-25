@@ -65,6 +65,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Only increment views for non-coach users
     if (!req.user.isCoach) {
       await storage.incrementViews(parseInt(req.params.id));
+
+      // Also update watch status when viewing
+      await storage.updateWatchStatus(
+        req.user.id,
+        parseInt(req.params.id),
+        true
+      );
     }
 
     res.sendStatus(200);
@@ -100,12 +107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       parseInt(req.params.contentId),
       req.body.watched
     );
-
-    // Invalidate any cached watchers data for this content
-    const content = await storage.getContent(parseInt(req.params.contentId));
-    if (content) {
-      await storage.incrementViews(content.id);
-    }
 
     res.json(status);
   });

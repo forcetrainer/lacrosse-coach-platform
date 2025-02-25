@@ -117,12 +117,9 @@ export default function ContentCard({ content }: ContentCardProps) {
       await apiRequest("POST", `/api/content/${content.id}/view`);
     },
     onSuccess: () => {
-      // Make sure we're invalidating the main content query to refresh the watchers list
+      // Invalidate all relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/content"] });
-      // Also update watch status when viewing content
-      if (!user?.isCoach && !watchStatus?.watched) {
-        toggleWatchMutation.mutate();
-      }
+      queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/watch`] });
     },
     onError: (error: Error) => {
       toast({

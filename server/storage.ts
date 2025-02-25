@@ -144,7 +144,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(watchStatus)
       .where(eq(watchStatus.contentId, contentId))
-      .innerJoin(users, eq(watchStatus.userId, users.id));
+      .innerJoin(users, eq(watchStatus.userId, users.id))
+      .orderBy(users.username);
   }
 }
 
