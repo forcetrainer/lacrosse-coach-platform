@@ -56,8 +56,14 @@ export function setupHealthMonitoring(app: Express) {
   });
 
   app.get("/api/health", async (req, res) => {
-    if (!req.user?.isCoach) {
-      return res.status(403).send("Only coaches can access health metrics");
+    // First check if user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Then check if user is a coach
+    if (!req.user.isCoach) {
+      return res.status(403).json({ error: "Only coaches can access health metrics" });
     }
 
     try {
