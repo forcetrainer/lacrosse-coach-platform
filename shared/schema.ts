@@ -2,6 +2,24 @@ import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Helper for validating social media URLs
+const socialMediaUrlSchema = z.string().url().refine((url) => {
+  const supportedPlatforms = [
+    'youtube.com',
+    'youtu.be',
+    'instagram.com',
+    'tiktok.com',
+    'facebook.com',
+    'fb.watch'
+  ];
+  try {
+    const urlObj = new URL(url);
+    return supportedPlatforms.some(platform => urlObj.hostname.includes(platform));
+  } catch {
+    return false;
+  }
+}, "URL must be from a supported social media platform (YouTube, Instagram, TikTok, or Facebook)");
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -15,6 +33,7 @@ export const contentLinks = pgTable("content_links", {
   title: text("title").notNull(),
   category: text("category").notNull(),
   coachId: integer("coach_id").notNull(),
+  platform: text("platform").notNull(),
 });
 
 export const comments = pgTable("comments", {
@@ -39,11 +58,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isCoach: true,
 });
 
-export const insertContentSchema = createInsertSchema(contentLinks).pick({
-  url: true,
-  title: true,
-  category: true,
-});
+export const insertContentSchema = createInsertSchema(contentLinks)
+  .pick({
+    url: true,
+    title: true,
+    category: true,
+  })
+  .extend({
+    url: socialMediaUrlSchema,
+  });
 
 export const insertCommentSchema = createInsertSchema(comments).pick({
   content: true,
@@ -56,3 +79,25 @@ export type User = typeof users.$inferSelect;
 export type ContentLink = typeof contentLinks.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type WatchStatus = typeof watchStatus.$inferSelect;
+
+// Platform detection helper
+export function detectPlatform(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+      return 'YouTube';
+    }
+    if (urlObj.hostname.includes('instagram.com')) {
+      return 'Instagram';
+    }
+    if (urlObj.hostname.includes('tiktok.com')) {
+      return 'TikTok';
+    }
+    if (urlObj.hostname.includes('facebook.com') || urlObj.hostname.includes('fb.watch')) {
+      return 'Facebook';
+    }
+    return 'Other';
+  } catch {
+    return 'Invalid URL';
+  }
+}

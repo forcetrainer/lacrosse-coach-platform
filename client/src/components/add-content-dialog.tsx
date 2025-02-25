@@ -25,12 +25,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Plus, Share2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import { insertContentSchema } from "@shared/schema";
+import { insertContentSchema, detectPlatform } from "@shared/schema";
 
 const categories = [
   "Dodging",
@@ -41,19 +41,56 @@ const categories = [
   "Game Strategy",
 ];
 
+function useShareTarget() {
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#share=')) {
+      const url = decodeURIComponent(window.location.hash.slice(7));
+      setSharedUrl(url);
+      // Clear the hash after reading
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  return sharedUrl;
+}
+
 export default function AddContentDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const sharedUrl = useShareTarget();
 
   const form = useForm<z.infer<typeof insertContentSchema>>({
     resolver: zodResolver(insertContentSchema),
     defaultValues: {
       title: "",
-      url: "",
+      url: sharedUrl || "",
       category: "",
     },
   });
+
+  // Watch URL changes to auto-detect platform
+  const url = form.watch("url");
+  useEffect(() => {
+    if (url) {
+      const platform = detectPlatform(url);
+      if (platform !== 'Invalid URL') {
+        toast({
+          title: `${platform} link detected`,
+          description: "URL validated successfully.",
+        });
+      }
+    }
+  }, [url, toast]);
+
+  // Auto-open dialog when there's a shared URL
+  useEffect(() => {
+    if (sharedUrl) {
+      setOpen(true);
+    }
+  }, [sharedUrl]);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof insertContentSchema>) => {
@@ -69,19 +106,26 @@ export default function AddContentDialog() {
         description: "Your training content has been added successfully.",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error adding content",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Content
+          <Share2 className="h-4 w-4 mr-2" />
+          Share Content
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Training Content</DialogTitle>
+          <DialogTitle>Share Training Content</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -90,12 +134,12 @@ export default function AddContentDialog() {
           >
             <FormField
               control={form.control}
-              name="title"
+              name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>Social Media URL</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="Paste YouTube, Instagram, TikTok, or Facebook URL" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,12 +147,12 @@ export default function AddContentDialog() {
             />
             <FormField
               control={form.control}
-              name="url"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="https://" />
+                    <Input {...field} placeholder="Give this content a descriptive title" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,7 +186,7 @@ export default function AddContentDialog() {
               {mutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Add Content
+              Share Content
             </Button>
           </form>
         </Form>

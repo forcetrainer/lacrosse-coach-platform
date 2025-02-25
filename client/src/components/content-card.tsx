@@ -2,9 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ContentLink, Comment } from "@shared/schema";
+import { ContentLink, Comment, detectPlatform } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, MessageSquare, Eye } from "lucide-react";
+import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -12,10 +13,29 @@ interface ContentCardProps {
   content: ContentLink;
 }
 
+function PlatformIcon({ url }: { url: string }) {
+  const platform = detectPlatform(url);
+  const iconClass = "h-5 w-5";
+
+  switch (platform) {
+    case 'YouTube':
+      return <SiYoutube className={`${iconClass} text-red-600`} />;
+    case 'Instagram':
+      return <SiInstagram className={`${iconClass} text-pink-600`} />;
+    case 'TikTok':
+      return <SiTiktok className={`${iconClass} text-black`} />;
+    case 'Facebook':
+      return <SiFacebook className={`${iconClass} text-blue-600`} />;
+    default:
+      return null;
+  }
+}
+
 export default function ContentCard({ content }: ContentCardProps) {
   const [comment, setComment] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const platform = detectPlatform(content.url);
 
   const { data: comments } = useQuery<Comment[]>({
     queryKey: [`/api/content/${content.id}/comments`],
@@ -34,6 +54,10 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/watch`] });
+      toast({
+        title: watchStatus?.watched ? "Marked as unwatched" : "Marked as watched",
+        description: "Your watch status has been updated.",
+      });
     },
   });
 
@@ -59,7 +83,10 @@ export default function ContentCard({ content }: ContentCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{content.title}</span>
+          <div className="flex items-center gap-2">
+            <PlatformIcon url={content.url} />
+            <span>{content.title}</span>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -76,11 +103,11 @@ export default function ContentCard({ content }: ContentCardProps) {
           href={content.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline break-all"
+          className="flex items-center gap-2 text-blue-600 hover:underline break-all"
         >
-          {content.url}
+          View on {platform}
         </a>
-        
+
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="h-4 w-4" />
