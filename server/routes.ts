@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const watchStats = await db
         .select({
           category: 'content_links.category',
-          watchCount: db.raw('COALESCE(sum(content_links.views), 0)::integer as watch_count')
+          watchCount: db.raw('COALESCE(sum(content_links.views), 0)::integer')
         })
         .from('content_links')
         .where('content_links.coach_id', req.user.id)
