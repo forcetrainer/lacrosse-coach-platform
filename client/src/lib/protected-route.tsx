@@ -5,9 +5,11 @@ import { Redirect, Route } from "wouter";
 export function ProtectedRoute({
   path,
   component: Component,
+  coachOnly = false,
 }: {
   path: string;
   component: () => React.JSX.Element;
+  coachOnly?: boolean;
 }) {
   const { user, isLoading } = useAuth();
 
@@ -29,5 +31,13 @@ export function ProtectedRoute({
     );
   }
 
-  return <Component />
+  if (coachOnly && !user.isCoach) {
+    return (
+      <Route path={path}>
+        <Redirect to="/" />
+      </Route>
+    );
+  }
+
+  return <Route path={path} component={Component} />;
 }

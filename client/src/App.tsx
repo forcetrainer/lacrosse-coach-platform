@@ -7,16 +7,24 @@ import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import AnalyticsPage from "@/pages/analytics-page";
+import { HealthDashboard } from "@/pages/HealthDashboard";
 import { ProtectedRoute } from "./lib/protected-route";
+import { Navbar } from "@/components/Navbar";
 
 function Router() {
   return (
-    <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/analytics" component={AnalyticsPage} />
-      <Route path="/auth" component={AuthPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen">
+      <Navbar />
+      <main>
+        <Switch>
+          <ProtectedRoute path="/" component={HomePage} />
+          <ProtectedRoute path="/analytics" component={AnalyticsPage} coachOnly />
+          <ProtectedRoute path="/health" component={HealthDashboard} coachOnly />
+          <Route path="/auth" component={AuthPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
 
