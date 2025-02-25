@@ -100,6 +100,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       parseInt(req.params.contentId),
       req.body.watched
     );
+
+    // Invalidate any cached watchers data for this content
+    const content = await storage.getContent(parseInt(req.params.contentId));
+    if (content) {
+      await storage.incrementViews(content.id);
+    }
+
     res.json(status);
   });
 

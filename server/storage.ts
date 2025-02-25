@@ -105,22 +105,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
-    const [status] = await db
-      .insert(watchStatus)
-      .values({ userId, contentId, watched })
-      .onConflictDoUpdate({
-        target: [watchStatus.userId, watchStatus.contentId],
-        set: { watched },
-      })
-      .returning();
-    return status;
+    // Start a transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      const [status] = await tx
+        .insert(watchStatus)
+        .values({ userId, contentId, watched })
+        .onConflictDoUpdate({
+          target: [watchStatus.userId, watchStatus.contentId],
+          set: { watched },
+        })
+        .returning();
+
+      return status;
+    });
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
     const [status] = await db
       .select()
       .from(watchStatus)
-      .where(eq(watchStatus.userId, userId) && eq(watchStatus.contentId, contentId));
+      .where(eq(watchStatus.userId, userId))
+      .where(eq(watchStatus.contentId, contentId));
     return status;
   }
 
