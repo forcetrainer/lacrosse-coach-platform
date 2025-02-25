@@ -136,17 +136,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from('content_links')
         .where('coach_id', req.user.id);
 
-      // Get watch status statistics - modified to show all categories
+      // Get watch stats by category - summing total views
       const watchStats = await db
         .select({
           category: 'content_links.category',
-          watchCount: db.raw('COALESCE(count(watch_status.id), 0)::integer')
+          watchCount: db.raw('COALESCE(sum(content_links.views), 0)::integer as watch_count')
         })
         .from('content_links')
-        .leftJoin('watch_status', function() {
-          this.on('content_links.id', '=', 'watch_status.content_id')
-              .andOn('watch_status.watched', '=', db.raw('true'));
-        })
         .where('content_links.coach_id', req.user.id)
         .groupBy('content_links.category');
 
