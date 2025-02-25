@@ -57,8 +57,8 @@ export function setupHealthMonitoring(app: Express) {
 
   app.get("/api/health", async (req: any, res) => {
     try {
-      // First check if user is authenticated and is a coach
-      if (!req.isAuthenticated() || !req.user?.isCoach) {
+      // First check if user exists and is a coach
+      if (!req.user || !req.user.isCoach) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
