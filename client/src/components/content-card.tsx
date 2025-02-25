@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ContentLink, Comment, extractVideoInfo } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, MessageSquare, Eye, PlayCircle, Trash2, ChevronDown, ChevronUp, Heart } from "lucide-react";
+import { Check, MessageSquare, Eye, PlayCircle, Trash2, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -139,18 +139,7 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/comments`] });
-      toast({
-        title: "Comment liked",
-        description: "Your like has been recorded.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error liking comment",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    }
   });
 
   const unlikeMutation = useMutation({
@@ -159,11 +148,7 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/comments`] });
-      toast({
-        title: "Like removed",
-        description: "Your like has been removed.",
-      });
-    },
+    }
   });
 
   const { data: watchStatus } = useQuery({
@@ -319,9 +304,9 @@ export default function ContentCard({ content }: ContentCardProps) {
                       }}
                     >
                       {comment.hasLiked ? (
-                        <Heart className="h-4 w-4 fill-current text-red-500" />
+                        <ThumbsUp className="h-4 w-4 fill-current text-primary" />
                       ) : (
-                        <Heart className="h-4 w-4" />
+                        <ThumbsUp className="h-4 w-4" />
                       )}
                       <span className="ml-1">{comment.likeCount}</span>
                     </Button>
