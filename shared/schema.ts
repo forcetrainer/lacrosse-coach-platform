@@ -114,7 +114,7 @@ export function extractVideoInfo(url: string): { platform: string; thumbnailUrl:
     if (urlObj.hostname.includes('instagram.com')) {
       return {
         platform: 'Instagram',
-        thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Instagram_logo_2022.svg'
+        thumbnailUrl: 'https://cdinstagram.com' + urlObj.pathname + 'media/?size=l'
       };
     }
 
