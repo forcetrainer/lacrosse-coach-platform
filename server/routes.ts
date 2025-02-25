@@ -26,11 +26,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json(parsed.error);
     }
 
-    const content = await storage.createContent(
-      { ...parsed.data },
-      req.user.id
-    );
-    res.status(201).json(content);
+    try {
+      const content = await storage.createContent(
+        { 
+          ...parsed.data,
+          coachId: req.user.id // Add coachId from authenticated user
+        },
+        req.user.id
+      );
+      res.status(201).json(content);
+    } catch (error) {
+      console.error('Error creating content:', error);
+      res.status(500).json({ error: 'Failed to create content' });
+    }
   });
 
   app.get("/api/content", async (req, res) => {
@@ -50,21 +58,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/content/:id", async (req, res) => {
+    try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ error: "Invalid content ID format" });
+      }
+
+      const content = await storage.getContent(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+
+      res.json(content);
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      res.status(500).json({ error: 'Failed to fetch content' });
+    }
+  });
+
   app.delete("/api/content/:id", async (req, res) => {
     if (!req.user?.isCoach) {
       return res.status(403).send("Only coaches can delete content");
     }
 
-    await storage.deleteContent(parseInt(req.params.id));
-    res.sendStatus(200);
+    try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ error: "Invalid content ID format" });
+      }
+
+      const content = await storage.getContent(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+
+      // Only allow the coach who created the content to delete it
+      if (content.coachId !== req.user.id) {
+        return res.status(403).json({ error: "You can only delete your own content" });
+      }
+
+      await storage.deleteContent(contentId);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      res.status(500).json({ error: 'Failed to delete content' });
+    }
   });
 
   app.post("/api/content/:id/view", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
-    const contentId = parseInt(req.params.id);
-
     try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ error: "Invalid content ID format" });
+      }
+
+      const content = await storage.getContent(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+
       // Only increment views and update watch status for non-coach users
       if (!req.user.isCoach) {
         // Increment the view count
@@ -94,11 +149,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json(parsed.error);
     }
 
-    const comment = await storage.createComment(
-      parsed.data,
-      req.user.id
-    );
-    res.status(201).json(comment);
+    try {
+      const comment = await storage.createComment(
+        {
+          ...parsed.data,
+          userId: req.user.id, // Add userId from authenticated user
+          contentId: parseInt(req.params.contentId)
+        },
+        req.user.id
+      );
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      res.status(500).json({ error: 'Failed to create comment' });
+    }
   });
 
   // Get comments with sorting and like status

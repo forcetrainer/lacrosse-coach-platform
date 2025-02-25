@@ -97,6 +97,11 @@ export const insertContentSchema = createInsertSchema(contentLinks)
 export const insertCommentSchema = createInsertSchema(comments).pick({
   content: true,
   contentId: true,
+}).extend({
+  content: z.string()
+    .min(1, "Comment cannot be empty")
+    .max(1000, "Comment cannot exceed 1000 characters"),
+  contentId: z.number().positive("Invalid content ID")
 });
 
 export const insertCommentLikeSchema = createInsertSchema(commentLikes).pick({
