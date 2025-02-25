@@ -133,10 +133,12 @@ export default function ContentCard({ content }: ContentCardProps) {
   const { data: watchStatus } = useQuery({
     queryKey: [`/api/content/${content.id}/watch`],
     enabled: !user?.isCoach && !!user, // Only fetch watch status for non-coach users who are logged in
+    // Initialize with unwatched state
+    initialData: { watched: false }
   });
 
-  // Only consider a video watched if we have an explicit watch status record with watched=true
-  const isWatched = Boolean(watchStatus?.watched);
+  // A video is only considered watched if there's an explicit watch status record with watched=true
+  const isWatched = watchStatus?.watched === true;
 
   const handleContentClick = () => {
     viewMutation.mutate();
@@ -160,29 +162,7 @@ export default function ContentCard({ content }: ContentCardProps) {
             <span>{content.title}</span>
           </div>
           <div className="flex items-center gap-2">
-            {user?.isCoach ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Content</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{content.title}"? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => deleteMutation.mutate()}>
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : (
+            {!user?.isCoach && (
               <Button
                 variant="ghost"
                 size="sm"
