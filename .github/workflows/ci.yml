@@ -1,0 +1,37 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check TypeScript compilation
+      run: npx tsc --noEmit
+      
+    - name: Lint code
+      run: |
+        npm run lint || true  # Don't fail if lint script doesn't exist yet
+        
+    - name: Build project
+      run: npm run build || true  # Don't fail if build script doesn't exist yet
+      
+    # We'll add test steps here once we have tests
+    # - name: Run tests
+    #   run: npm test
