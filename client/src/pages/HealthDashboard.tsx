@@ -59,7 +59,8 @@ export const HealthDashboard: FC = () => {
   const { data: metrics, error, isLoading: isMetricsLoading } = useQuery<SystemMetrics>({
     queryKey: ['/api/health'],
     refetchInterval: 5000, // Refresh every 5 seconds
-    enabled: !!user?.isCoach // Only fetch if user is a coach
+    enabled: !!user?.isCoach, // Only fetch if user is a coach
+    retry: false // Don't retry on auth failure
   });
 
   const isLoading = isAuthLoading || isMetricsLoading;
