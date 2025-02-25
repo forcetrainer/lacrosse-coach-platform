@@ -103,15 +103,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
 
     try {
+      // Get watch status for this specific user and content combination
       const status = await storage.getWatchStatus(
         req.user.id,
         parseInt(req.params.contentId)
       );
 
-      // A video is only watched if there's an explicit record with watched=true
-      // No record or watched=false means the video is not watched
+      // Video is only watched if:
+      // 1. A record exists
+      // 2. The record belongs to the current user
+      // 3. The watched flag is true
       res.json({
-        watched: status?.watched === true
+        watched: status?.userId === req.user.id && status?.watched === true
       });
     } catch (error) {
       console.error('Error getting watch status:', error);
@@ -129,8 +132,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.body.watched
       );
 
+      // Return watched status only if:
+      // 1. The record belongs to the current user
+      // 2. The watched flag is true
       res.json({
-        watched: status.watched
+        watched: status.userId === req.user.id && status.watched === true
       });
     } catch (error) {
       console.error('Error updating watch status:', error);

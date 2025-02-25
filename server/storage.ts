@@ -107,7 +107,7 @@ export class DatabaseStorage implements IStorage {
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
     // Start a transaction to ensure data consistency
     return await db.transaction(async (tx) => {
-      // Try to find existing watch status
+      // Try to find existing watch status for this specific user and content
       const [existingStatus] = await tx
         .select()
         .from(watchStatus)
@@ -134,11 +134,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
+    // Get watch status for this specific user and content combination
     const [status] = await db
       .select()
       .from(watchStatus)
       .where(eq(watchStatus.userId, userId))
-      .where(eq(watchStatus.contentId, contentId));
+      .where(eq(watchStatus.contentId, contentId))
+      .limit(1);
 
     return status;
   }
