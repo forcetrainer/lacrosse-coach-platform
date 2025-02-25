@@ -135,6 +135,10 @@ export default function ContentCard({ content }: ContentCardProps) {
     enabled: !user?.isCoach && !!user, // Only fetch watch status for non-coach users who are logged in
   });
 
+  // Debug logging
+  console.log('Watch status for content', content.id, ':', watchStatus);
+  console.log('User:', user);
+
   // Video is only watched if we have an explicit record with watched=true
   const isWatched = watchStatus?.watched === true;
 
