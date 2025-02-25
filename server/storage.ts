@@ -105,10 +105,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
-    // Start a transaction to ensure data consistency
-    return await db.transaction(async (tx) => {
-      // Try to find existing watch status for this specific user and content
-      const [existingStatus] = await tx
+    try {
+      // First try to find existing watch status
+      const [existingStatus] = await db
         .select()
         .from(watchStatus)
         .where(eq(watchStatus.userId, userId))
@@ -116,21 +115,28 @@ export class DatabaseStorage implements IStorage {
 
       if (existingStatus) {
         // Update existing status
-        const [updated] = await tx
+        const [updated] = await db
           .update(watchStatus)
           .set({ watched })
           .where(eq(watchStatus.id, existingStatus.id))
           .returning();
         return updated;
       } else {
-        // Create new status
-        const [newStatus] = await tx
+        // Create new status entry
+        const [newStatus] = await db
           .insert(watchStatus)
-          .values({ userId, contentId, watched })
+          .values({
+            userId,
+            contentId,
+            watched
+          })
           .returning();
         return newStatus;
       }
-    });
+    } catch (error) {
+      console.error('Error updating watch status:', error);
+      throw error;
+    }
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
@@ -139,8 +145,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(watchStatus)
       .where(eq(watchStatus.userId, userId))
-      .where(eq(watchStatus.contentId, contentId))
-      .limit(1);
+      .where(eq(watchStatus.contentId, contentId));
 
     // If no status exists for this user+content combination, return undefined
     return status;
