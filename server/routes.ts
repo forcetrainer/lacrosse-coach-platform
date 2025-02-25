@@ -102,29 +102,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/content/:contentId/watch", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
-    const status = await storage.getWatchStatus(
-      req.user.id,
-      parseInt(req.params.contentId)
-    );
+    try {
+      const status = await storage.getWatchStatus(
+        req.user.id,
+        parseInt(req.params.contentId)
+      );
 
-    // If no record exists, it means the video is unwatched
-    res.json({
-      watched: Boolean(status?.watched)
-    });
+      // If no status exists for this user and content, it's unwatched
+      res.json({
+        watched: status ? status.watched : false
+      });
+    } catch (error) {
+      console.error('Error getting watch status:', error);
+      res.status(500).json({ error: 'Failed to get watch status' });
+    }
   });
 
   app.post("/api/content/:contentId/watch", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
-    const status = await storage.updateWatchStatus(
-      req.user.id,
-      parseInt(req.params.contentId),
-      req.body.watched
-    );
+    try {
+      const status = await storage.updateWatchStatus(
+        req.user.id,
+        parseInt(req.params.contentId),
+        req.body.watched
+      );
 
-    res.json({
-      watched: Boolean(status.watched)
-    });
+      res.json({
+        watched: status.watched
+      });
+    } catch (error) {
+      console.error('Error updating watch status:', error);
+      res.status(500).json({ error: 'Failed to update watch status' });
+    }
   });
 
   // Analytics

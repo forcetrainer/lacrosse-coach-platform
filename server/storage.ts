@@ -107,28 +107,35 @@ export class DatabaseStorage implements IStorage {
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
     // Start a transaction to ensure data consistency
     return await db.transaction(async (tx) => {
-      const [status] = await tx
-        .insert(watchStatus)
-        .values({ userId, contentId, watched })
-        .onConflictDoUpdate({
-          target: [watchStatus.userId, watchStatus.contentId],
-          set: { watched },
-        })
-        .returning();
+      // Try to find existing watch status
+      const [existingStatus] = await tx
+        .select()
+        .from(watchStatus)
+        .where(eq(watchStatus.userId, userId))
+        .where(eq(watchStatus.contentId, contentId));
 
-      return status;
+      if (existingStatus) {
+        // Update existing status
+        const [updated] = await tx
+          .update(watchStatus)
+          .set({ watched })
+          .where(eq(watchStatus.id, existingStatus.id))
+          .returning();
+        return updated;
+      } else {
+        // Create new status
+        const [newStatus] = await tx
+          .insert(watchStatus)
+          .values({ userId, contentId, watched })
+          .returning();
+        return newStatus;
+      }
     });
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
-    // Use explicit join conditions to ensure we only get watch status for this specific user and content
     const [status] = await db
-      .select({
-        id: watchStatus.id,
-        userId: watchStatus.userId,
-        contentId: watchStatus.contentId,
-        watched: watchStatus.watched
-      })
+      .select()
       .from(watchStatus)
       .where(eq(watchStatus.userId, userId))
       .where(eq(watchStatus.contentId, contentId));

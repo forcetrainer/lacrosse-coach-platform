@@ -67,6 +67,7 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/watch`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
       toast({
         title: watchStatus?.watched ? "Marked as unwatched" : "Marked as watched",
         description: "Your watch status has been updated.",
