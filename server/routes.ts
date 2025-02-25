@@ -39,6 +39,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(content);
   });
 
+  app.delete("/api/content/:id", async (req, res) => {
+    if (!req.user?.isCoach) {
+      return res.status(403).send("Only coaches can delete content");
+    }
+
+    await storage.deleteContent(parseInt(req.params.id));
+    res.sendStatus(200);
+  });
+
   // Comments
   app.post("/api/content/:contentId/comments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);

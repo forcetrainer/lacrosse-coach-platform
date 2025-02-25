@@ -4,10 +4,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ContentLink, Comment, extractVideoInfo } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, MessageSquare, Eye, PlayCircle } from "lucide-react";
+import { Check, MessageSquare, Eye, PlayCircle, Trash2 } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ContentCardProps {
   content: ContentLink;
@@ -36,6 +48,7 @@ export default function ContentCard({ content }: ContentCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { platform } = extractVideoInfo(content.url);
+  const { user } = useAuth();
 
   const { data: comments } = useQuery<Comment[]>({
     queryKey: [`/api/content/${content.id}/comments`],
@@ -79,6 +92,26 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/content/${content.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+      toast({
+        title: "Content deleted",
+        description: "The content has been removed successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting content",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -87,14 +120,39 @@ export default function ContentCard({ content }: ContentCardProps) {
             <PlatformIcon url={content.url} />
             <span>{content.title}</span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleWatchMutation.mutate()}
-            className={watchStatus?.watched ? "text-green-600" : ""}
-          >
-            {watchStatus?.watched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            {user?.isCoach && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Content</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{content.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteMutation.mutate()} >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleWatchMutation.mutate()}
+              className={watchStatus?.watched ? "text-green-600" : ""}
+            >
+              {watchStatus?.watched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
         </CardTitle>
         <div className="text-sm text-muted-foreground">Category: {content.category}</div>
       </CardHeader>

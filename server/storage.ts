@@ -17,6 +17,7 @@ export interface IStorage {
   createContent(content: Omit<ContentLink, "id">, coachId: number): Promise<ContentLink>;
   getContent(id: number): Promise<ContentLink | undefined>;
   getAllContent(): Promise<ContentLink[]>;
+  deleteContent(id: number): Promise<void>;
 
   // Comments
   createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment>;
@@ -69,6 +70,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContent(): Promise<ContentLink[]> {
     return await db.select().from(contentLinks);
+  }
+
+  async deleteContent(id: number): Promise<void> {
+    await db.delete(contentLinks).where(eq(contentLinks.id, id));
   }
 
   async createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment> {
