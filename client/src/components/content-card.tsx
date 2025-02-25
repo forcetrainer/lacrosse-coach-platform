@@ -49,6 +49,7 @@ export default function ContentCard({ content }: ContentCardProps) {
   const queryClient = useQueryClient();
   const { platform } = extractVideoInfo(content.url);
   const { user } = useAuth();
+  const isYouTube = platform === 'YouTube';
 
   const { data: comments } = useQuery<Comment[]>({
     queryKey: [`/api/content/${content.id}/comments`],
@@ -137,7 +138,7 @@ export default function ContentCard({ content }: ContentCardProps) {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => deleteMutation.mutate()} >
+                    <AlertDialogAction onClick={() => deleteMutation.mutate()}>
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -157,32 +158,31 @@ export default function ContentCard({ content }: ContentCardProps) {
         <div className="text-sm text-muted-foreground">Category: {content.category}</div>
       </CardHeader>
       <CardContent>
-        {content.thumbnailUrl ? (
-          <a
-            href={content.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
-          >
+        <a
+          href={content.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
+        >
+          {isYouTube ? (
             <img
               src={content.thumbnailUrl}
               alt={content.title}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <PlayCircle className="w-12 h-12 text-white" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">
+              <img
+                src={content.thumbnailUrl}
+                alt={`${platform} content`}
+                className="h-16 w-16 object-contain"
+              />
             </div>
-          </a>
-        ) : (
-          <a
-            href={content.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-blue-600 hover:underline break-all mb-4"
-          >
-            View on {platform}
-          </a>
-        )}
+          )}
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <PlayCircle className="w-12 h-12 text-white" />
+          </div>
+        </a>
 
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">

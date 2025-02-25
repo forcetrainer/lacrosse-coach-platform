@@ -108,13 +108,11 @@ export function extractVideoInfo(url: string): { platform: string; thumbnailUrl:
       };
     }
 
-    // Instagram
+    // Instagram - Use platform logo as fallback
     if (urlObj.hostname.includes('instagram.com')) {
-      const match = urlObj.pathname.match(/\/(p|reel|tv)\/([^\/]+)/);
-      const mediaId = match?.[2];
       return {
         platform: 'Instagram',
-        thumbnailUrl: mediaId ? `https://www.instagram.com/p/${mediaId}/media/?size=l` : null
+        thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Instagram_logo_2022.svg'
       };
     }
 
@@ -124,16 +122,15 @@ export function extractVideoInfo(url: string): { platform: string; thumbnailUrl:
       const videoId = match?.[1];
       return {
         platform: 'TikTok',
-        thumbnailUrl: videoId ? `https://www.tiktok.com/api/img/?itemId=${videoId}` : null
+        thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg'
       };
     }
 
     // Facebook
     if (urlObj.hostname.includes('facebook.com') || urlObj.hostname.includes('fb.watch')) {
-      const videoId = urlObj.searchParams.get('v');
       return {
         platform: 'Facebook',
-        thumbnailUrl: videoId ? `https://graph.facebook.com/${videoId}/picture` : null
+        thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg'
       };
     }
 
