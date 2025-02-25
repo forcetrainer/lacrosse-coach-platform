@@ -57,6 +57,17 @@ export const watchStatus = pgTable("watch_status", {
   uniqueIndex: uniqueIndex("watch_status_user_content_idx").on(table.userId, table.contentId),
 }));
 
+// New likes table
+export const commentLikes = pgTable("comment_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  commentId: integer("comment_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  // Ensure a user can only like a comment once
+  uniqueIndex: uniqueIndex("comment_likes_user_comment_idx").on(table.userId, table.commentId),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -88,12 +99,17 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
   contentId: true,
 });
 
+export const insertCommentLikeSchema = createInsertSchema(commentLikes).pick({
+  commentId: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type ContentLink = typeof contentLinks.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type WatchStatus = typeof watchStatus.$inferSelect;
+export type CommentLike = typeof commentLikes.$inferSelect;
 
 // Platform detection helper
 export function extractVideoInfo(url: string): { platform: string; thumbnailUrl: string | null } {

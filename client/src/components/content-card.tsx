@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ContentLink, Comment, extractVideoInfo } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, MessageSquare, Eye, PlayCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, MessageSquare, Eye, PlayCircle, Trash2, ChevronDown, ChevronUp, Heart } from "lucide-react";
 import { SiYoutube, SiInstagram, SiTiktok, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ContentCardProps {
   content: ContentLink & {
@@ -49,13 +50,15 @@ function PlatformIcon({ url }: { url: string }) {
 export default function ContentCard({ content }: ContentCardProps) {
   const [comment, setComment] = useState("");
   const [showAllComments, setShowAllComments] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { platform } = extractVideoInfo(content.url);
   const { user } = useAuth();
 
-  const { data: comments = [] } = useQuery<(Comment & { username: string })[]>({
-    queryKey: [`/api/content/${content.id}/comments`],
+  const { data: comments = [] } = useQuery<(Comment & { username: string; likeCount: number; hasLiked?: boolean })[]>({
+    queryKey: [`/api/content/${content.id}/comments`, sortBy],
+    queryFn: () => apiRequest("GET", `/api/content/${content.id}/comments?sortBy=${sortBy}`).then(res => res.json())
   });
 
   const toggleWatchMutation = useMutation({
@@ -126,6 +129,39 @@ export default function ContentCard({ content }: ContentCardProps) {
         title: "Error tracking view",
         description: error.message,
         variant: "destructive",
+      });
+    },
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await apiRequest("POST", `/api/comments/${commentId}/like`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/comments`] });
+      toast({
+        title: "Comment liked",
+        description: "Your like has been recorded.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error liking comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unlikeMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await apiRequest("POST", `/api/comments/${commentId}/unlike`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/comments`] });
+      toast({
+        title: "Like removed",
+        description: "Your like has been removed.",
       });
     },
   });
@@ -244,28 +280,22 @@ export default function ContentCard({ content }: ContentCardProps) {
               <MessageSquare className="h-4 w-4" />
               <span className="font-medium">Comments ({comments.length})</span>
             </div>
-            {hasMoreComments && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAllComments(!showAllComments)}
-              >
-                {showAllComments ? (
-                  <>
-                    <ChevronUp className="h-4 w-4 mr-1" />
-                    Show Less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-1" />
-                    Show All ({comments.length})
-                  </>
-                )}
-              </Button>
-            )}
+            <Select
+              value={sortBy}
+              onValueChange={(value: 'newest' | 'oldest' | 'likes') => setSortBy(value)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="likes">Most liked</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
-            {visibleComments.map((comment) => (
+            {comments.map((comment) => (
               <div key={comment.id} className="bg-muted p-3 rounded-md">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-sm">{comment.username}</span>
@@ -274,6 +304,29 @@ export default function ContentCard({ content }: ContentCardProps) {
                   </span>
                 </div>
                 <p className="text-sm">{comment.content}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={comment.userId === user?.id || likeMutation.isPending || unlikeMutation.isPending}
+                      onClick={() => {
+                        if (comment.hasLiked) {
+                          unlikeMutation.mutate(comment.id);
+                        } else {
+                          likeMutation.mutate(comment.id);
+                        }
+                      }}
+                    >
+                      {comment.hasLiked ? (
+                        <Heart className="h-4 w-4 fill-current text-red-500" />
+                      ) : (
+                        <Heart className="h-4 w-4" />
+                      )}
+                      <span className="ml-1">{comment.likeCount}</span>
+                    </Button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

@@ -1,6 +1,6 @@
-import { User, InsertUser, ContentLink, Comment, WatchStatus } from "@shared/schema";
-import { users, contentLinks, comments, watchStatus } from "@shared/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { User, InsertUser, ContentLink, Comment, WatchStatus, commentLikes } from "@shared/schema";
+import { users, contentLinks, comments, watchStatus, commentLikes as commentLikesTable } from "@shared/schema";
+import { eq, sql, desc, asc, and } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -21,7 +21,11 @@ export interface IStorage {
 
   // Comments
   createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment>;
-  getCommentsByContent(contentId: number): Promise<(Comment & { username: string })[]>;
+  getCommentsByContent(
+    contentId: number,
+    sortBy?: 'newest' | 'oldest' | 'likes'
+  ): Promise<(Comment & { username: string; likeCount: number })[]>;
+  getCommentById(id: number): Promise<(Comment & { userId: number }) | undefined>;
 
   // Watch status
   updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus>;
@@ -32,6 +36,11 @@ export interface IStorage {
   getWatchersForContent(contentId: number): Promise<{ username: string; watched: boolean }[]>;
 
   sessionStore: session.Store;
+
+  // Comment likes
+  likeComment(userId: number, commentId: number): Promise<void>;
+  unlikeComment(userId: number, commentId: number): Promise<void>;
+  hasUserLikedComment(userId: number, commentId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -88,20 +97,51 @@ export class DatabaseStorage implements IStorage {
     return newComment;
   }
 
-  async getCommentsByContent(contentId: number): Promise<(Comment & { username: string })[]> {
-    return await db
+  async getCommentsByContent(
+    contentId: number,
+    sortBy: 'newest' | 'oldest' | 'likes' = 'newest'
+  ): Promise<(Comment & { username: string; likeCount: number })[]> {
+    // Subquery to count likes per comment
+    const likesCount = db
+      .select({
+        commentId: commentLikesTable.commentId,
+        count: sql<number>`count(*)::integer`.as('count'),
+      })
+      .from(commentLikesTable)
+      .groupBy(commentLikesTable.commentId)
+      .as('likes_count');
+
+    const baseQuery = db
       .select({
         id: comments.id,
         content: comments.content,
         userId: comments.userId,
         contentId: comments.contentId,
         createdAt: comments.createdAt,
-        username: users.username
+        username: users.username,
+        likeCount: sql<number>`COALESCE(${likesCount.count}, 0)::integer`,
       })
       .from(comments)
-      .where(eq(comments.contentId, contentId))
+      .leftJoin(likesCount, eq(comments.id, likesCount.commentId))
       .innerJoin(users, eq(comments.userId, users.id))
-      .orderBy(desc(comments.createdAt));
+      .where(eq(comments.contentId, contentId));
+
+    // Apply sorting
+    if (sortBy === 'newest') {
+      return await baseQuery.orderBy(desc(comments.createdAt));
+    } else if (sortBy === 'oldest') {
+      return await baseQuery.orderBy(asc(comments.createdAt));
+    } else {
+      return await baseQuery.orderBy(desc(sql`COALESCE(${likesCount.count}, 0)`));
+    }
+  }
+
+  async getCommentById(id: number): Promise<(Comment & { userId: number }) | undefined> {
+    const [comment] = await db
+      .select()
+      .from(comments)
+      .where(eq(comments.id, id));
+    return comment;
   }
 
   async updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus> {
@@ -154,6 +194,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(watchStatus.contentId, contentId))
       .innerJoin(users, eq(watchStatus.userId, users.id))
       .orderBy(users.username);
+  }
+
+  async likeComment(userId: number, commentId: number): Promise<void> {
+    await db
+      .insert(commentLikesTable)
+      .values({ userId, commentId })
+      .onConflictDoNothing(); // If already liked, do nothing
+  }
+
+  async unlikeComment(userId: number, commentId: number): Promise<void> {
+    await db
+      .delete(commentLikesTable)
+      .where(
+        and(
+          eq(commentLikesTable.userId, userId),
+          eq(commentLikesTable.commentId, commentId)
+        )
+      );
+  }
+
+  async hasUserLikedComment(userId: number, commentId: number): Promise<boolean> {
+    const [like] = await db
+      .select()
+      .from(commentLikesTable)
+      .where(
+        and(
+          eq(commentLikesTable.userId, userId),
+          eq(commentLikesTable.commentId, commentId)
+        )
+      );
+    return !!like;
   }
 }
 

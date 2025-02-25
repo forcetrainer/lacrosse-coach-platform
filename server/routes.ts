@@ -101,9 +101,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(comment);
   });
 
+  // Get comments with sorting and like status
   app.get("/api/content/:contentId/comments", async (req, res) => {
-    const comments = await storage.getCommentsByContent(parseInt(req.params.contentId));
-    res.json(comments);
+    const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'likes') || 'newest';
+    const comments = await storage.getCommentsByContent(
+      parseInt(req.params.contentId),
+      sortBy
+    );
+
+    // If user is logged in, check which comments they've liked
+    if (req.user) {
+      const commentsWithLikeStatus = await Promise.all(
+        comments.map(async (comment) => ({
+          ...comment,
+          hasLiked: await storage.hasUserLikedComment(req.user!.id, comment.id)
+        }))
+      );
+      res.json(commentsWithLikeStatus);
+    } else {
+      res.json(comments);
+    }
+  });
+
+  // Like a comment
+  app.post("/api/comments/:commentId/like", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      // Check if this is the user's own comment
+      const comment = await storage.getCommentById(parseInt(req.params.commentId));
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      if (comment.userId === req.user.id) {
+        return res.status(400).json({ error: "Cannot like your own comment" });
+      }
+
+      await storage.likeComment(req.user.id, parseInt(req.params.commentId));
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      res.status(500).json({ error: 'Failed to like comment' });
+    }
+  });
+
+  // Unlike a comment
+  app.post("/api/comments/:commentId/unlike", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      await storage.unlikeComment(req.user.id, parseInt(req.params.commentId));
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error unliking comment:', error);
+      res.status(500).json({ error: 'Failed to unlike comment' });
+    }
   });
 
   // Watch status
