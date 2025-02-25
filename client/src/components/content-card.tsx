@@ -205,11 +205,11 @@ export default function ContentCard({ content }: ContentCardProps) {
             <p className="font-medium mb-1">Viewed by:</p>
             <div className="flex flex-wrap gap-1">
               {content.watchers.map((watcher) => (
-                <span 
+                <span
                   key={watcher.username}
                   className={`px-2 py-1 rounded-full text-xs ${
-                    watcher.watched 
-                      ? "bg-green-100 text-green-700" 
+                    watcher.watched
+                      ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-700"
                   }`}
                 >
