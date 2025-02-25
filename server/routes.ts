@@ -111,15 +111,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
 
     try {
+      console.log('Fetching watch status for:', {
+        userId: req.user.id,
+        contentId: req.params.contentId
+      });
+
       const status = await storage.getWatchStatus(
         req.user.id,
         parseInt(req.params.contentId)
       );
 
-      // Return watched:false if no record exists, otherwise return the record's watched status
-      res.json({
+      console.log('Watch status from DB:', status);
+
+      const response = {
         watched: status ? status.watched : false
-      });
+      };
+
+      console.log('Sending response:', response);
+
+      res.json(response);
     } catch (error) {
       console.error('Error getting watch status:', error);
       res.status(500).json({ error: 'Failed to get watch status' });
