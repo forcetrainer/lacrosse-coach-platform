@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -52,7 +52,10 @@ export const watchStatus = pgTable("watch_status", {
   userId: integer("user_id").notNull(),
   contentId: integer("content_id").notNull(),
   watched: boolean("watched").notNull().default(false),
-});
+}, (table) => ({
+  // Add unique constraint properly using Drizzle syntax
+  uniqueIndex: uniqueIndex("watch_status_user_content_idx").on(table.userId, table.contentId),
+}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({

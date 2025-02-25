@@ -130,7 +130,7 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
   });
 
-  const { data: watchStatus } = useQuery({
+  const { data: watchStatus = { watched: false } } = useQuery({
     queryKey: [`/api/content/${content.id}/watch`],
   });
 

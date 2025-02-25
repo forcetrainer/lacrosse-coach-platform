@@ -14,14 +14,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Content management
-  createContent(content: Omit<ContentLink, "id">, coachId: number): Promise<ContentLink>;
+  createContent(content: Omit<ContentLink, "id" | "views">, coachId: number): Promise<ContentLink>;
   getContent(id: number): Promise<ContentLink | undefined>;
   getAllContent(): Promise<ContentLink[]>;
   deleteContent(id: number): Promise<void>;
 
   // Comments
   createComment(comment: Omit<Comment, "id" | "createdAt">, userId: number): Promise<Comment>;
-  getCommentsByContent(contentId: number): Promise<Comment[]>;
+  getCommentsByContent(contentId: number): Promise<(Comment & { username: string })[]>;
 
   // Watch status
   updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus>;
@@ -58,10 +58,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createContent(content: Omit<ContentLink, "id">, coachId: number): Promise<ContentLink> {
+  async createContent(content: Omit<ContentLink, "id" | "views">, coachId: number): Promise<ContentLink> {
     const [newContent] = await db
       .insert(contentLinks)
-      .values({ ...content, coachId })
+      .values({ ...content, coachId, views: 0 })
       .returning();
     return newContent;
   }
@@ -87,7 +87,7 @@ export class DatabaseStorage implements IStorage {
     return newComment;
   }
 
-  async getCommentsByContent(contentId: number): Promise<Comment[]> {
+  async getCommentsByContent(contentId: number): Promise<(Comment & { username: string })[]> {
     return await db
       .select({
         id: comments.id,
@@ -119,8 +119,7 @@ export class DatabaseStorage implements IStorage {
     const [status] = await db
       .select()
       .from(watchStatus)
-      .where(eq(watchStatus.userId, userId))
-      .where(eq(watchStatus.contentId, contentId));
+      .where(eq(watchStatus.userId, userId) && eq(watchStatus.contentId, contentId));
     return status;
   }
 
