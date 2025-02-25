@@ -6,6 +6,7 @@ import ContentCard from "@/components/content-card";
 import AddContentDialog from "@/components/add-content-dialog";
 import { LogOut } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
@@ -21,7 +22,14 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold text-primary">SkillReel</h1>
           <div className="flex items-center gap-4">
             <span>Welcome, {user?.username}</span>
-            {user?.isCoach && <AddContentDialog />}
+            {user?.isCoach && (
+              <>
+                <AddContentDialog />
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/analytics">Analytics</Link>
+                </Button>
+              </>
+            )}
             <Button variant="outline" size="sm" onClick={() => logoutMutation.mutate()} disabled={logoutMutation.isPending}>
               {logoutMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
             </Button>
@@ -38,7 +46,7 @@ export default function HomePage() {
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold mb-2">No content yet</h2>
             <p className="text-muted-foreground">
-              {user?.isCoach 
+              {user?.isCoach
                 ? "Start by adding some training content for your players."
                 : "Check back later for training content from your coaches."}
             </p>

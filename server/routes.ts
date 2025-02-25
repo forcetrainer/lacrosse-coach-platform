@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertContentSchema, insertCommentSchema } from "@shared/schema";
+import knex from 'knex';
 
 // Helper function to detect platform (needs a robust implementation in a real application)
 function detectPlatform(url: string): string {
@@ -25,9 +26,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json(parsed.error);
     }
 
-    const platform = detectPlatform(parsed.data.url);
     const content = await storage.createContent(
-      { ...parsed.data, platform },
+      { ...parsed.data },
       req.user.id
     );
     res.status(201).json(content);
@@ -59,7 +59,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
-  // Add this endpoint in the routes file after other content endpoints
   app.post("/api/content/:id/view", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
@@ -81,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const comment = await storage.createComment(
-      { ...parsed.data, contentId: parseInt(req.params.contentId) },
+      parsed.data,
       req.user.id
     );
     res.status(201).json(comment);
@@ -112,6 +111,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       parseInt(req.params.contentId)
     );
     res.json(status || { watched: false });
+  });
+
+  // Analytics
+  app.get("/api/analytics", async (req, res) => {
+    if (!req.user?.isCoach) {
+      return res.status(403).send("Only coaches can access analytics");
+    }
+
+    const db = knex({
+      client: 'pg',
+      connection: process.env.DATABASE_URL
+    });
+
+    try {
+      // Get total views per content
+      const contentViews = await db
+        .select({
+          id: 'id',
+          title: 'title',
+          views: 'views',
+          category: 'category',
+        })
+        .from('content_links')
+        .where('coach_id', req.user.id);
+
+      // Get watch status statistics
+      const watchStats = await db
+        .select({
+          category: 'content_links.category',
+          watchCount: db.raw('count(watch_status.id)')
+        })
+        .from('content_links')
+        .leftJoin('watch_status', 'content_links.id', 'watch_status.content_id')
+        .where('content_links.coach_id', req.user.id)
+        .groupBy('content_links.category');
+
+      // Get unique viewers per content
+      const uniqueViewers = await db
+        .select({
+          contentId: 'content_links.id',
+          title: 'content_links.title',
+          uniqueViewers: db.raw('count(distinct watch_status.user_id)')
+        })
+        .from('content_links')
+        .leftJoin('watch_status', 'content_links.id', 'watch_status.content_id')
+        .where('content_links.coach_id', req.user.id)
+        .groupBy('content_links.id', 'content_links.title');
+
+      res.json({
+        contentViews,
+        watchStats,
+        uniqueViewers,
+      });
+    } finally {
+      await db.destroy();
+    }
   });
 
   const httpServer = createServer(app);
