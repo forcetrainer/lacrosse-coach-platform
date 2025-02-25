@@ -99,6 +99,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Watch status
+  app.get("/api/content/:contentId/watch", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    const status = await storage.getWatchStatus(
+      req.user.id,
+      parseInt(req.params.contentId)
+    );
+
+    // Always return a definitive watch status
+    res.json({
+      watched: status ? status.watched : false
+    });
+  });
+
   app.post("/api/content/:contentId/watch", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
@@ -109,17 +123,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     );
 
     res.json(status);
-  });
-
-  app.get("/api/content/:contentId/watch", async (req, res) => {
-    if (!req.user) return res.sendStatus(401);
-
-    const status = await storage.getWatchStatus(
-      req.user.id,
-      parseInt(req.params.contentId)
-    );
-    // Explicitly return unwatched status if no record exists
-    res.json({ watched: status?.watched || false });
   });
 
   // Analytics

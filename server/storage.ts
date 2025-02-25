@@ -121,11 +121,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined> {
+    // Use explicit join conditions to ensure we only get watch status for this specific user and content
     const [status] = await db
-      .select()
+      .select({
+        id: watchStatus.id,
+        userId: watchStatus.userId,
+        contentId: watchStatus.contentId,
+        watched: watchStatus.watched
+      })
       .from(watchStatus)
       .where(eq(watchStatus.userId, userId))
       .where(eq(watchStatus.contentId, contentId));
+
     return status;
   }
 
