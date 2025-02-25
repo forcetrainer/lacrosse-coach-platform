@@ -132,9 +132,11 @@ export default function ContentCard({ content }: ContentCardProps) {
   const { data: watchStatus } = useQuery({
     queryKey: [`/api/content/${content.id}/watch`],
     enabled: !user?.isCoach, // Only fetch watch status for non-coach users
+    // If no data is returned, treat it as unwatched
+    placeholderData: { watched: false }
   });
 
-  // By default, content is unwatched unless explicitly marked as watched
+  // Ensure we have a boolean value
   const isWatched = Boolean(watchStatus?.watched);
 
   const handleContentClick = () => {
