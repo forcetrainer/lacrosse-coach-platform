@@ -36,6 +36,7 @@ export const contentLinks = pgTable("content_links", {
   platform: text("platform").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   description: text("description").notNull(),
+  views: integer("views").notNull().default(0),
 });
 
 export const comments = pgTable("comments", {
@@ -120,8 +121,6 @@ export function extractVideoInfo(url: string): { platform: string; thumbnailUrl:
 
     // TikTok
     if (urlObj.hostname.includes('tiktok.com')) {
-      const match = urlObj.pathname.match(/\/video\/(\d+)/);
-      const videoId = match?.[1];
       return {
         platform: 'TikTok',
         thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg'

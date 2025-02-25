@@ -1,6 +1,6 @@
 import { User, InsertUser, ContentLink, Comment, WatchStatus } from "@shared/schema";
 import { users, contentLinks, comments, watchStatus } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -26,6 +26,9 @@ export interface IStorage {
   // Watch status
   updateWatchStatus(userId: number, contentId: number, watched: boolean): Promise<WatchStatus>;
   getWatchStatus(userId: number, contentId: number): Promise<WatchStatus | undefined>;
+
+  // View tracking
+  incrementViews(contentId: number): Promise<void>;
 
   sessionStore: session.Store;
 }
@@ -110,6 +113,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(watchStatus.userId, userId))
       .where(eq(watchStatus.contentId, contentId));
     return status;
+  }
+
+  async incrementViews(contentId: number): Promise<void> {
+    await db
+      .update(contentLinks)
+      .set({ views: sql`${contentLinks.views} + 1` })
+      .where(eq(contentLinks.id, contentId));
   }
 }
 

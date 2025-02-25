@@ -112,6 +112,17 @@ export default function ContentCard({ content }: ContentCardProps) {
     },
   });
 
+  const viewMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/content/${content.id}/view`);
+    },
+  });
+
+  const handleContentClick = () => {
+    viewMutation.mutate();
+    window.open(content.url, '_blank');
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -154,13 +165,18 @@ export default function ContentCard({ content }: ContentCardProps) {
             </Button>
           </div>
         </CardTitle>
-        <div className="text-sm text-muted-foreground">Category: {content.category}</div>
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Category: {content.category}</span>
+          <span>{content.views} views</span>
+        </div>
       </CardHeader>
       <CardContent>
         <a
-          href={content.url}
-          target="_blank"
-          rel="noopener noreferrer"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            handleContentClick();
+          }}
           className="relative block aspect-video w-full overflow-hidden rounded-lg mb-4 group"
         >
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">

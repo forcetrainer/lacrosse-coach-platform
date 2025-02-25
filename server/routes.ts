@@ -48,6 +48,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
+  // Add this endpoint in the routes file after other content endpoints
+  app.post("/api/content/:id/view", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    // Only increment views for non-coach users
+    if (!req.user.isCoach) {
+      await storage.incrementViews(parseInt(req.params.id));
+    }
+
+    res.sendStatus(200);
+  });
+
   // Comments
   app.post("/api/content/:contentId/comments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
