@@ -136,14 +136,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from('content_links')
         .where('coach_id', req.user.id);
 
-      // Get watch status statistics
+      // Get watch status statistics - modified to show all categories
       const watchStats = await db
         .select({
           category: 'content_links.category',
-          watchCount: db.raw('count(watch_status.id)')
+          watchCount: db.raw('COALESCE(count(watch_status.id), 0)::integer')
         })
         .from('content_links')
-        .leftJoin('watch_status', 'content_links.id', 'watch_status.content_id')
+        .leftJoin('watch_status', function() {
+          this.on('content_links.id', '=', 'watch_status.content_id')
+              .andOn('watch_status.watched', '=', db.raw('true'));
+        })
         .where('content_links.coach_id', req.user.id)
         .groupBy('content_links.category');
 
@@ -152,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           contentId: 'content_links.id',
           title: 'content_links.title',
-          uniqueViewers: db.raw('count(distinct watch_status.user_id)')
+          uniqueViewers: db.raw('count(distinct case when watch_status.watched then watch_status.user_id end)::integer')
         })
         .from('content_links')
         .leftJoin('watch_status', 'content_links.id', 'watch_status.content_id')
