@@ -29,6 +29,7 @@ export interface IStorage {
 
   // View tracking
   incrementViews(contentId: number): Promise<void>;
+  getWatchersForContent(contentId: number): Promise<{ username: string; watched: boolean }[]>;
 
   sessionStore: session.Store;
 }
@@ -128,6 +129,17 @@ export class DatabaseStorage implements IStorage {
       .update(contentLinks)
       .set({ views: sql`${contentLinks.views} + 1` })
       .where(eq(contentLinks.id, contentId));
+  }
+
+  async getWatchersForContent(contentId: number): Promise<{ username: string; watched: boolean }[]> {
+    return await db
+      .select({
+        username: users.username,
+        watched: watchStatus.watched,
+      })
+      .from(watchStatus)
+      .where(eq(watchStatus.contentId, contentId))
+      .innerJoin(users, eq(watchStatus.userId, users.id));
   }
 }
 

@@ -23,7 +23,9 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 
 interface ContentCardProps {
-  content: ContentLink;
+  content: ContentLink & {
+    watchers?: { username: string; watched: boolean }[];
+  };
 }
 
 function PlatformIcon({ url }: { url: string }) {
@@ -155,7 +157,7 @@ export default function ContentCard({ content }: ContentCardProps) {
             <span>{content.title}</span>
           </div>
           <div className="flex items-center gap-2">
-            {user?.isCoach && (
+            {user?.isCoach ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="sm">
@@ -177,8 +179,7 @@ export default function ContentCard({ content }: ContentCardProps) {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            )}
-            {!user?.isCoach && (
+            ) : (
               <Button
                 variant="ghost"
                 size="sm"
@@ -199,6 +200,25 @@ export default function ContentCard({ content }: ContentCardProps) {
             <span>{content.views} views</span>
           </div>
         </div>
+        {user?.isCoach && content.watchers && content.watchers.length > 0 && (
+          <div className="mt-2 text-sm">
+            <p className="font-medium mb-1">Viewed by:</p>
+            <div className="flex flex-wrap gap-1">
+              {content.watchers.map((watcher) => (
+                <span 
+                  key={watcher.username}
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    watcher.watched 
+                      ? "bg-green-100 text-green-700" 
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {watcher.username}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <a

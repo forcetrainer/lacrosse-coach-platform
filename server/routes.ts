@@ -33,9 +33,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(content);
   });
 
-  app.get("/api/content", async (_req, res) => {
+  app.get("/api/content", async (req, res) => {
     const content = await storage.getAllContent();
-    res.json(content);
+
+    // If the user is a coach, fetch watchers for each content
+    if (req.user?.isCoach) {
+      const contentWithWatchers = await Promise.all(
+        content.map(async (item) => {
+          const watchers = await storage.getWatchersForContent(item.id);
+          return { ...item, watchers };
+        })
+      );
+      res.json(contentWithWatchers);
+    } else {
+      res.json(content);
+    }
   });
 
   app.delete("/api/content/:id", async (req, res) => {
