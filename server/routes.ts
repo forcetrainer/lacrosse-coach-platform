@@ -116,9 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(req.params.contentId)
       );
 
-      // Only return watched:true if we have an explicit record with watched=true
+      // Return watched:false if no record exists, otherwise return the record's watched status
       res.json({
-        watched: status?.watched === true
+        watched: status ? status.watched : false
       });
     } catch (error) {
       console.error('Error getting watch status:', error);
