@@ -144,17 +144,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/content/:contentId/comments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
 
-    const parsed = insertCommentSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json(parsed.error);
-    }
-
     try {
+      const contentId = parseInt(req.params.contentId);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ error: "Invalid content ID format" });
+      }
+
+      const content = await storage.getContent(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+
+      const parsed = insertCommentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+
       const comment = await storage.createComment(
         {
           ...parsed.data,
-          userId: req.user.id, // Add userId from authenticated user
-          contentId: parseInt(req.params.contentId)
+          userId: req.user.id,
+          contentId
         },
         req.user.id
       );
@@ -167,23 +177,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get comments with sorting and like status
   app.get("/api/content/:contentId/comments", async (req, res) => {
-    const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'likes') || 'newest';
-    const comments = await storage.getCommentsByContent(
-      parseInt(req.params.contentId),
-      sortBy
-    );
+    try {
+      const contentId = parseInt(req.params.contentId);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ error: "Invalid content ID format" });
+      }
 
-    // If user is logged in, check which comments they've liked
-    if (req.user) {
-      const commentsWithLikeStatus = await Promise.all(
-        comments.map(async (comment) => ({
-          ...comment,
-          hasLiked: await storage.hasUserLikedComment(req.user!.id, comment.id)
-        }))
-      );
-      res.json(commentsWithLikeStatus);
-    } else {
-      res.json(comments);
+      const content = await storage.getContent(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'likes') || 'newest';
+      const comments = await storage.getCommentsByContent(contentId, sortBy);
+
+      // If user is logged in, check which comments they've liked
+      if (req.user) {
+        const commentsWithLikeStatus = await Promise.all(
+          comments.map(async (comment) => ({
+            ...comment,
+            hasLiked: await storage.hasUserLikedComment(req.user!.id, comment.id)
+          }))
+        );
+        res.json(commentsWithLikeStatus);
+      } else {
+        res.json(comments);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      res.status(500).json({ error: 'Failed to fetch comments' });
     }
   });
 

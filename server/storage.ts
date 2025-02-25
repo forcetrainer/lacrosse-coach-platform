@@ -101,6 +101,11 @@ export class DatabaseStorage implements IStorage {
     contentId: number,
     sortBy: 'newest' | 'oldest' | 'likes' = 'newest'
   ): Promise<(Comment & { username: string; likeCount: number })[]> {
+    // Validate contentId
+    if (isNaN(contentId) || !Number.isInteger(contentId)) {
+      throw new Error("Invalid content ID");
+    }
+
     // Subquery to count likes per comment
     const likesCount = db
       .select({
