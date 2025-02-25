@@ -11,7 +11,6 @@ function detectPlatform(url: string): string {
   return "other";
 }
 
-
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 

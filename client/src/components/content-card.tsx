@@ -174,19 +174,26 @@ export default function ContentCard({ content }: ContentCardProps) {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleWatchMutation.mutate()}
-              className={watchStatus?.watched ? "text-green-600" : ""}
-            >
-              {watchStatus?.watched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            {!user?.isCoach && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleWatchMutation.mutate()}
+                className={watchStatus?.watched ? "text-green-600" : ""}
+              >
+                {watchStatus?.watched ? <Check className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            )}
           </div>
         </CardTitle>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>Category: {content.category}</span>
-          <span>{content.views} views</span>
+          <div className="flex items-center gap-4">
+            {!user?.isCoach && (
+              <span>{watchStatus?.watched ? "Watched" : "Not watched"}</span>
+            )}
+            <span>{content.views} views</span>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
