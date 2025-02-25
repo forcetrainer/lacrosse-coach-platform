@@ -66,7 +66,11 @@ export const insertContentSchema = createInsertSchema(contentLinks)
   })
   .extend({
     url: socialMediaUrlSchema,
-  });
+  })
+  .transform((data) => ({
+    ...data,
+    platform: detectPlatform(data.url),
+  }));
 
 export const insertCommentSchema = createInsertSchema(comments).pick({
   content: true,

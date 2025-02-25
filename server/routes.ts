@@ -4,6 +4,14 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertContentSchema, insertCommentSchema } from "@shared/schema";
 
+// Helper function to detect platform (needs a robust implementation in a real application)
+function detectPlatform(url: string): string {
+  if (url.includes("youtube.com")) return "youtube";
+  if (url.includes("vimeo.com")) return "vimeo";
+  return "other";
+}
+
+
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
@@ -18,7 +26,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json(parsed.error);
     }
 
-    const content = await storage.createContent(parsed.data, req.user.id);
+    const platform = detectPlatform(parsed.data.url);
+    const content = await storage.createContent(
+      { ...parsed.data, platform },
+      req.user.id
+    );
     res.status(201).json(content);
   });
 
