@@ -117,7 +117,6 @@ export default function ContentCard({ content }: ContentCardProps) {
       await apiRequest("POST", `/api/content/${content.id}/view`);
     },
     onSuccess: () => {
-      // Invalidate all relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/content"] });
       queryClient.invalidateQueries({ queryKey: [`/api/content/${content.id}/watch`] });
     },
@@ -132,6 +131,7 @@ export default function ContentCard({ content }: ContentCardProps) {
 
   const { data: watchStatus = { watched: false } } = useQuery({
     queryKey: [`/api/content/${content.id}/watch`],
+    enabled: !user?.isCoach, // Only fetch watch status for non-coach users
   });
 
   const handleContentClick = () => {
