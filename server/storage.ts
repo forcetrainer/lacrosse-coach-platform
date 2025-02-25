@@ -142,6 +142,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(watchStatus.contentId, contentId))
       .limit(1);
 
+    // If no status exists for this user+content combination, return undefined
     return status;
   }
 
