@@ -116,6 +116,17 @@ export default function ContentCard({ content }: ContentCardProps) {
     mutationFn: async () => {
       await apiRequest("POST", `/api/content/${content.id}/view`);
     },
+    onSuccess: () => {
+      // Invalidate the content query to refresh the view count
+      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error tracking view",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleContentClick = () => {
