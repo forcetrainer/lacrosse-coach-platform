@@ -116,10 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(req.params.contentId)
       );
 
-      // A video is only considered watched if we have a record for this specific user
-      // If no record exists, it means this user hasn't watched it
+      // Only return watched:true if we have an explicit record with watched=true
       res.json({
-        watched: status?.watched ?? false
+        watched: status?.watched === true
       });
     } catch (error) {
       console.error('Error getting watch status:', error);
